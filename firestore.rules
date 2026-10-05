@@ -1,0 +1,265 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny catch-all (Pillar 1 / Phase 4.1)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 1. UserProfile Validation Helper
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.username is string && data.username.size() >= 2 && data.username.size() <= 30 &&
+             data.avatarIndex is int && data.avatarIndex >= 0 && data.avatarIndex <= 11 &&
+             data.level is int && data.level >= 1 && data.level <= 1000 &&
+             data.xp is int && data.xp >= 0 && data.xp <= 100000000 &&
+             data.coins is int && data.coins >= 0 && data.coins <= 100000000 &&
+             data.gamesPlayed is int && data.gamesPlayed >= 0 && data.gamesPlayed <= 1000000 &&
+             data.wins is int && data.wins >= 0 && data.wins <= 1000000 &&
+             data.losses is int && data.losses >= 0 && data.losses <= 1000000 &&
+             data.currentStreak is int && data.currentStreak >= 0 && data.currentStreak <= 100000 &&
+             data.bestStreak is int && data.bestStreak >= 0 && data.bestStreak <= 100000 &&
+             data.capturesTotal is int && data.capturesTotal >= 0 && data.capturesTotal <= 1000000 &&
+             data.unlockedAchievements is list && data.unlockedAchievements.size() <= 30 &&
+             (data.unlockedAchievements.size() == 0 || (data.unlockedAchievements[0] is string && data.unlockedAchievements[0].size() <= 64)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // 2. LeaderboardEntry Validation Helper
+    function isValidLeaderboardEntry(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.username is string && data.username.size() >= 2 && data.username.size() <= 30 &&
+             data.avatarIndex is int && data.avatarIndex >= 0 && data.avatarIndex <= 11 &&
+             data.wins is int && data.wins >= 0 && data.wins <= 1000000 &&
+             data.xp is int && data.xp >= 0 && data.xp <= 100000000 &&
+             data.level is int && data.level >= 1 && data.level <= 1000000 &&
+             data.gamesPlayed is int && data.gamesPlayed >= 0 && data.gamesPlayed <= 1000000 &&
+             data.winRatePercent is int && data.winRatePercent >= 0 && data.winRatePercent <= 100 &&
+             data.isPublic is bool && data.isPublic == true &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // 3. OnlineRoom Validation Helper
+    function isValidRoom(data) {
+      return data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 128 &&
+             data.roomCode is string && data.roomCode.size() >= 4 && data.roomCode.size() <= 12 &&
+             data.hostUid is string && data.hostUid.size() >= 1 && data.hostUid.size() <= 128 &&
+             data.hostName is string && data.hostName.size() >= 2 && data.hostName.size() <= 30 &&
+             data.mode is string && (data.mode == 'QUICK_MATCH' || data.mode == 'PRIVATE_ROOM') &&
+             data.status is string && (data.status == 'WAITING' || data.status == 'PLAYING' || data.status == 'FINISHED') &&
+             data.maxPlayers is int && data.maxPlayers >= 2 && data.maxPlayers <= 4 &&
+             data.playerUids is list && data.playerUids.size() >= 1 && data.playerUids.size() <= 4 &&
+             data.playerUids[0] is string && data.playerUids[0].size() <= 128 &&
+             data.playerNames is list && data.playerNames.size() >= 1 && data.playerNames.size() <= 4 &&
+             data.playerNames[0] is string && data.playerNames[0].size() <= 30 &&
+             data.readyUids is list && data.readyUids.size() <= 4 &&
+             (data.readyUids.size() == 0 || (data.readyUids[0] is string && data.readyUids[0].size() <= 128)) &&
+             data.currentTurnIndex is int && data.currentTurnIndex >= 0 && data.currentTurnIndex <= 3 &&
+             data.currentTurnUid is string && data.currentTurnUid.size() >= 1 && data.currentTurnUid.size() <= 128 &&
+             data.diceValue is int && data.diceValue >= 0 && data.diceValue <= 6 &&
+             data.phase is string && (data.phase == 'WAITING_FOR_ROLL' || data.phase == 'WAITING_FOR_MOVE' || data.phase == 'GAME_OVER') &&
+             data.version is int && data.version >= 1 && data.version <= 1000000 &&
+             data.boardStateJson is string && data.boardStateJson.size() >= 2 && data.boardStateJson.size() <= 4000 &&
+             data.lastActionId is string && data.lastActionId.size() >= 1 && data.lastActionId.size() <= 128 &&
+             data.winnerUid is string && data.winnerUid.size() <= 128 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // 4. MatchRecord Validation Helper
+    function isValidMatchRecord(data) {
+      return data.matchId is string && data.matchId.size() >= 1 && data.matchId.size() <= 128 &&
+             data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.gameMode is string && (data.gameMode == 'OFFLINE_LOCAL' || data.gameMode == 'VS_AI' || data.gameMode == 'QUICK_MATCH' || data.gameMode == 'PRIVATE_ROOM') &&
+             data.opponentNames is string && data.opponentNames.size() >= 1 && data.opponentNames.size() <= 200 &&
+             data.winnerName is string && data.winnerName.size() >= 1 && data.winnerName.size() <= 60 &&
+             data.isWin is bool &&
+             data.durationSeconds is int && data.durationSeconds >= 0 && data.durationSeconds <= 86400 &&
+             data.coinsDelta is int && data.coinsDelta >= -10000 && data.coinsDelta <= 100000 &&
+             data.xpEarned is int && data.xpEarned >= 0 && data.xpEarned <= 100000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    // Collection 1: /users/{userId}
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'username', 'avatarIndex', 'level', 'xp', 'coins',
+                         'gamesPlayed', 'wins', 'losses', 'currentStreak', 'bestStreak',
+                         'capturesTotal', 'unlockedAchievements', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'username', 'avatarIndex', 'level', 'xp', 'coins',
+                         'gamesPlayed', 'wins', 'losses', 'currentStreak', 'bestStreak',
+                         'capturesTotal', 'unlockedAchievements', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         // Action 1: Profile Edit (username or avatar)
+                         incoming().diff(existing()).affectedKeys().hasOnly(['username', 'avatarIndex', 'updatedAt']) ||
+                         // Action 2: Progression / Match Completion Update
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'username', 'avatarIndex', 'level', 'xp', 'coins',
+                           'gamesPlayed', 'wins', 'losses', 'currentStreak', 'bestStreak',
+                           'capturesTotal', 'unlockedAchievements', 'updatedAt'
+                         ])
+                       );
+
+      allow delete: if false;
+
+      // Subcollection 4: /users/{userId}/matches/{matchId}
+      match /matches/{matchId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(matchId) && request.auth.uid == userId;
+        allow list: if isSignedIn() && request.auth.uid == userId && existing().userId == request.auth.uid;
+
+        allow create: if isSignedIn() &&
+                         isValidId(userId) &&
+                         isValidId(matchId) &&
+                         request.auth.uid == userId &&
+                         incoming().userId == request.auth.uid &&
+                         incoming().matchId == matchId &&
+                         incoming().keys().hasAll([
+                           'matchId', 'userId', 'gameMode', 'opponentNames',
+                           'winnerName', 'isWin', 'durationSeconds', 'coinsDelta',
+                           'xpEarned', 'createdAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'matchId', 'userId', 'gameMode', 'opponentNames',
+                           'winnerName', 'isWin', 'durationSeconds', 'coinsDelta',
+                           'xpEarned', 'createdAt'
+                         ]) &&
+                         isValidMatchRecord(incoming());
+
+        allow update, delete: if false;
+      }
+    }
+
+    // Collection 2: /leaderboard/{userId}
+    match /leaderboard/{userId} {
+      allow get: if isSignedIn() && isValidId(userId);
+      allow list: if isSignedIn() && existing().isPublic == true;
+
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'username', 'avatarIndex', 'wins', 'xp',
+                         'level', 'gamesPlayed', 'winRatePercent', 'isPublic', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'username', 'avatarIndex', 'wins', 'xp',
+                         'level', 'gamesPlayed', 'winRatePercent', 'isPublic', 'updatedAt'
+                       ]) &&
+                       isValidLeaderboardEntry(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       isValidLeaderboardEntry(incoming()) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == existing().userId &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'username', 'avatarIndex', 'wins', 'xp', 'level',
+                         'gamesPlayed', 'winRatePercent', 'isPublic', 'updatedAt'
+                       ]);
+
+      allow delete: if false;
+    }
+
+    // Collection 3: /rooms/{roomId}
+    match /rooms/{roomId} {
+      allow get: if isSignedIn() && isValidId(roomId);
+      allow list: if isSignedIn() && (existing().status == 'WAITING' || request.auth.uid in existing().playerUids);
+
+      allow create: if isSignedIn() &&
+                       isValidId(roomId) &&
+                       incoming().roomId == roomId &&
+                       incoming().hostUid == request.auth.uid &&
+                       request.auth.uid in incoming().playerUids &&
+                       incoming().status == 'WAITING' &&
+                       incoming().version == 1 &&
+                       incoming().winnerUid == '' &&
+                       incoming().keys().hasAll([
+                         'roomId', 'roomCode', 'hostUid', 'hostName', 'mode', 'status',
+                         'maxPlayers', 'playerUids', 'playerNames', 'readyUids',
+                         'currentTurnIndex', 'currentTurnUid', 'diceValue', 'phase',
+                         'version', 'boardStateJson', 'lastActionId', 'winnerUid',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'roomId', 'roomCode', 'hostUid', 'hostName', 'mode', 'status',
+                         'maxPlayers', 'playerUids', 'playerNames', 'readyUids',
+                         'currentTurnIndex', 'currentTurnUid', 'diceValue', 'phase',
+                         'version', 'boardStateJson', 'lastActionId', 'winnerUid',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidRoom(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(roomId) &&
+                       isValidRoom(incoming()) &&
+                       existing().status != 'FINISHED' &&
+                       incoming().roomId == existing().roomId &&
+                       incoming().roomCode == existing().roomCode &&
+                       incoming().hostUid == existing().hostUid &&
+                       incoming().hostName == existing().hostName &&
+                       incoming().mode == existing().mode &&
+                       incoming().maxPlayers == existing().maxPlayers &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().version == existing().version + 1 &&
+                       incoming().lastActionId != existing().lastActionId &&
+                       (
+                         // Action 1: Join / Ready / Start Game in Lobby
+                         (existing().status == 'WAITING' &&
+                          request.auth.uid in incoming().playerUids &&
+                          incoming().diff(existing()).affectedKeys().hasOnly([
+                            'playerUids', 'playerNames', 'readyUids', 'status',
+                            'currentTurnIndex', 'currentTurnUid', 'boardStateJson',
+                            'version', 'lastActionId', 'updatedAt'
+                          ])) ||
+                         // Action 2: Authoritative Turn Action (Roll / Move / Finish)
+                         (existing().status == 'PLAYING' &&
+                          request.auth.uid in existing().playerUids &&
+                          incoming().diff(existing()).affectedKeys().hasOnly([
+                            'currentTurnIndex', 'currentTurnUid', 'diceValue',
+                            'phase', 'version', 'boardStateJson', 'lastActionId',
+                            'status', 'winnerUid', 'updatedAt'
+                          ]))
+                       );
+
+      allow delete: if false;
+    }
+  }
+}

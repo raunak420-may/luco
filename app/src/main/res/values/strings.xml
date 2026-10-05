@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Royal Dice Ludo</string>
+    <string name="app_tagline">Roll. Move. Conquer.</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="play_offline_guest">Play Offline Without Sign-In</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_ranks">Ranks</string>
+    <string name="nav_trophies">Trophies</string>
+    <string name="nav_history">History</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_settings">Settings</string>
+</resources>

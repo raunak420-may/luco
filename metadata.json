@@ -1,0 +1,6 @@
+{
+  "name": "Royal Dice Ludo",
+  "description": "Roll. Move. Conquer. A premium Ludo board game featuring offline multiplayer, smart AI opponents, online multiplayer, private rooms, leaderboards, and achievements.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

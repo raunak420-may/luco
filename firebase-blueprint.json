@@ -1,0 +1,351 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Player profile, progression (XP/Level), virtual non-cash coins, stats, and unlocked achievements.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated user UID."
+        },
+        "username": {
+          "type": "string",
+          "description": "Display name of the player (2-30 chars)."
+        },
+        "avatarIndex": {
+          "type": "integer",
+          "description": "Selected royal avatar index (0-11)."
+        },
+        "level": {
+          "type": "integer",
+          "description": "Current player level (>= 1)."
+        },
+        "xp": {
+          "type": "integer",
+          "description": "Total experience points (>= 0)."
+        },
+        "coins": {
+          "type": "integer",
+          "description": "Virtual non-cash coin balance (>= 0)."
+        },
+        "gamesPlayed": {
+          "type": "integer",
+          "description": "Total games completed (>= 0)."
+        },
+        "wins": {
+          "type": "integer",
+          "description": "Total victories (>= 0)."
+        },
+        "losses": {
+          "type": "integer",
+          "description": "Total losses (>= 0)."
+        },
+        "currentStreak": {
+          "type": "integer",
+          "description": "Current win streak (>= 0)."
+        },
+        "bestStreak": {
+          "type": "integer",
+          "description": "Highest win streak achieved (>= 0)."
+        },
+        "capturesTotal": {
+          "type": "integer",
+          "description": "Total opponent tokens captured (>= 0)."
+        },
+        "unlockedAchievements": {
+          "type": "array",
+          "description": "Bounded list of unlocked achievement IDs (max 30)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile creation server timestamp (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile update server timestamp (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "username",
+        "avatarIndex",
+        "level",
+        "xp",
+        "coins",
+        "gamesPlayed",
+        "wins",
+        "losses",
+        "currentStreak",
+        "bestStreak",
+        "capturesTotal",
+        "unlockedAchievements",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "Publicly queryable leaderboard entry isolated from private profile settings.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Player UID."
+        },
+        "username": {
+          "type": "string",
+          "description": "Player display name."
+        },
+        "avatarIndex": {
+          "type": "integer",
+          "description": "Selected avatar crest index."
+        },
+        "wins": {
+          "type": "integer",
+          "description": "Total wins."
+        },
+        "xp": {
+          "type": "integer",
+          "description": "Total XP."
+        },
+        "level": {
+          "type": "integer",
+          "description": "Player level."
+        },
+        "gamesPlayed": {
+          "type": "integer",
+          "description": "Total games played."
+        },
+        "winRatePercent": {
+          "type": "integer",
+          "description": "Win rate percentage (0-100)."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Must be true for public leaderboard visibility."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update server timestamp (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "username",
+        "avatarIndex",
+        "wins",
+        "xp",
+        "level",
+        "gamesPlayed",
+        "winRatePercent",
+        "isPublic",
+        "updatedAt"
+      ]
+    },
+    "OnlineRoom": {
+      "title": "OnlineRoom",
+      "description": "Real-time multiplayer room and authoritative versioned Ludo game state.",
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "description": "Unique room identifier."
+        },
+        "roomCode": {
+          "type": "string",
+          "description": "Short 6-character alphanumeric room code (e.g. A7K9P2)."
+        },
+        "hostUid": {
+          "type": "string",
+          "description": "UID of the room creator/host."
+        },
+        "hostName": {
+          "type": "string",
+          "description": "Display name of the host."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["QUICK_MATCH", "PRIVATE_ROOM"],
+          "description": "Matchmaking mode."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["WAITING", "PLAYING", "FINISHED"],
+          "description": "Lifecycle status of the room."
+        },
+        "maxPlayers": {
+          "type": "integer",
+          "description": "Maximum number of players (2-4)."
+        },
+        "playerUids": {
+          "type": "array",
+          "description": "Ordered list of participating player UIDs (1-4)."
+        },
+        "playerNames": {
+          "type": "array",
+          "description": "Ordered list of participating player display names (1-4)."
+        },
+        "readyUids": {
+          "type": "array",
+          "description": "List of player UIDs marked ready."
+        },
+        "currentTurnIndex": {
+          "type": "integer",
+          "description": "Index of active turn player (0-3)."
+        },
+        "currentTurnUid": {
+          "type": "string",
+          "description": "UID of active turn player."
+        },
+        "diceValue": {
+          "type": "integer",
+          "description": "Current authoritative dice value (0-6)."
+        },
+        "phase": {
+          "type": "string",
+          "enum": ["WAITING_FOR_ROLL", "WAITING_FOR_MOVE", "GAME_OVER"],
+          "description": "Current turn phase."
+        },
+        "version": {
+          "type": "integer",
+          "description": "Monotonically increasing state version for anti-cheat & optimistic concurrency."
+        },
+        "boardStateJson": {
+          "type": "string",
+          "description": "Compact serialized token positions and turn state."
+        },
+        "lastActionId": {
+          "type": "string",
+          "description": "Unique action ID to prevent duplicate or replay actions."
+        },
+        "winnerUid": {
+          "type": "string",
+          "description": "UID of winning player (empty string until FINISHED)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Room creation server timestamp (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last action server timestamp (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "roomId",
+        "roomCode",
+        "hostUid",
+        "hostName",
+        "mode",
+        "status",
+        "maxPlayers",
+        "playerUids",
+        "playerNames",
+        "readyUids",
+        "currentTurnIndex",
+        "currentTurnUid",
+        "diceValue",
+        "phase",
+        "version",
+        "boardStateJson",
+        "lastActionId",
+        "winnerUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "MatchRecord": {
+      "title": "MatchRecord",
+      "description": "Append-only match history and virtual coin/XP reward audit record per user.",
+      "type": "object",
+      "properties": {
+        "matchId": {
+          "type": "string",
+          "description": "Unique match record ID."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner player UID."
+        },
+        "gameMode": {
+          "type": "string",
+          "enum": ["OFFLINE_LOCAL", "VS_AI", "QUICK_MATCH", "PRIVATE_ROOM"],
+          "description": "Game mode played."
+        },
+        "opponentNames": {
+          "type": "string",
+          "description": "Comma-separated opponent names."
+        },
+        "winnerName": {
+          "type": "string",
+          "description": "Display name of the match winner."
+        },
+        "isWin": {
+          "type": "boolean",
+          "description": "Whether the authenticated user won."
+        },
+        "durationSeconds": {
+          "type": "integer",
+          "description": "Match duration in seconds."
+        },
+        "coinsDelta": {
+          "type": "integer",
+          "description": "Virtual coin change for this match."
+        },
+        "xpEarned": {
+          "type": "integer",
+          "description": "XP awarded for this match."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Completion server timestamp (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "matchId",
+        "userId",
+        "gameMode",
+        "opponentNames",
+        "winnerName",
+        "isWin",
+        "durationSeconds",
+        "coinsDelta",
+        "xpEarned",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Private per-user profile, progression, coins, stats, and achievements."
+    },
+    "/leaderboard/{userId}": {
+      "schema": {
+        "$ref": "#/entities/LeaderboardEntry"
+      },
+      "description": "Public leaderboard projection per player."
+    },
+    "/rooms/{roomId}": {
+      "schema": {
+        "$ref": "#/entities/OnlineRoom"
+      },
+      "description": "Active multiplayer rooms and versioned online game state."
+    },
+    "/users/{userId}/matches/{matchId}": {
+      "schema": {
+        "$ref": "#/entities/MatchRecord"
+      },
+      "description": "Per-user append-only match history records."
+    }
+  }
+}
